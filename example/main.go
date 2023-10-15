@@ -1,10 +1,3 @@
-# go-log
-
-log for golang
-
-## Usage
-
-```go
 package main
 
 import (
@@ -14,7 +7,7 @@ import (
 func main() {
 	log.SetRoot(1)
 	log.SetLevel(log.LvMax)
-	
+
 	log.Trace("ttttt")
 	log.Tracef("ttttt: %d", 1)
 	log.Debug("ddddd")
@@ -28,18 +21,3 @@ func main() {
 	log.Fatal("fffff")
 	log.Fatalf("fffff: %d", 4)
 }
-```
-
-## Installation
-
-```
-$ go get github.com/zii/go-log
-```
-
-## License
-
-MIT
-
-## Thanks
-
-* https://github.com/mattn/go-isatty
