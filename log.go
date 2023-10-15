@@ -30,9 +30,10 @@ type Header struct {
 }
 
 type Logger struct {
-	root string // project root path
-	out  io.Writer
-	lv   int
+	root        string // project root path
+	out         io.Writer
+	lv          int
+	time_format string
 }
 
 func New(out io.Writer, root_depth int, lv int) *Logger {
@@ -47,9 +48,10 @@ func New(out io.Writer, root_depth int, lv int) *Logger {
 		pwd = filepath.Dir(pwd)
 	}
 	l := &Logger{
-		root: pwd + string(filepath.Separator),
-		out:  out,
-		lv:   lv,
+		root:        pwd + string(filepath.Separator),
+		out:         out,
+		lv:          lv,
+		time_format: time.DateTime,
 	}
 	return l
 }
@@ -78,6 +80,10 @@ func (l *Logger) Level() int {
 
 func (l *Logger) SetOutput(w io.Writer) {
 	l.out = w
+}
+
+func (l *Logger) SetTimeFormat(f string) {
+	l.time_format = f
 }
 
 func (l *Logger) newHeader(skip int) *Header {
@@ -172,10 +178,12 @@ func (l *Logger) Errorf(format string, v ...interface{}) {
 
 func (l *Logger) Fatal(v ...interface{}) {
 	l.Writeln(LvFatal, "F", v...)
+	os.Exit(1)
 }
 
 func (l *Logger) Fatalf(format string, v ...interface{}) {
 	l.Writef(LvFatal, "F", format, v...)
+	os.Exit(1)
 }
 
 var Default = New(os.Stderr, 0, LvInfo)
@@ -184,6 +192,8 @@ var SetRoot = Default.SetRoot
 var Root = Default.Root
 var SetLevel = Default.SetLevel
 var Level = Default.Level
+var SetTimeFormat = Default.SetTimeFormat
+
 var Trace = Default.Trace
 var Tracef = Default.Tracef
 var Debug = Default.Debug

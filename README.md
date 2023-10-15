@@ -12,7 +12,8 @@ import (
 )
 
 func main() {
-	log.SetRoot(1)
+	// set project base dir
+	log.SetRoot(1) // 1=..
 	log.SetLevel(log.LvMax)
 	
 	log.Trace("ttttt")
@@ -42,4 +43,5 @@ MIT
 
 ## Thanks
 
+* https://github.com/fatih/color
 * https://github.com/mattn/go-isatty
