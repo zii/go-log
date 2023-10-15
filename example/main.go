@@ -5,7 +5,8 @@ import (
 )
 
 func main() {
-	log.SetRoot(1)
+	// set relative depth of project base dir
+	log.SetRoot(1) // 1=..
 	log.SetLevel(log.LvMax)
 
 	log.Trace("ttttt")
