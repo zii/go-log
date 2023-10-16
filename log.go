@@ -24,43 +24,46 @@ const (
 )
 
 type Header struct {
-	file     string
-	line     int
-	datetime string
+	file string
+	line int
+	time string
 }
 
 type Logger struct {
-	root        string // project root path
+	root        string // project base dir
 	out         io.Writer
 	lv          int
 	time_format string
 }
 
-func New(out io.Writer, root_depth int, lv int) *Logger {
+func New(out io.Writer, up_levels int, lv int) *Logger {
 	if out == nil {
 		out = os.Stderr
 	}
-	if root_depth < 0 {
-		root_depth = 0
-	}
-	_, pwd, _, _ := runtime.Caller(1)
-	for i := 0; i < root_depth+1; i++ {
-		pwd = filepath.Dir(pwd)
-	}
 	l := &Logger{
-		root:        pwd + string(filepath.Separator),
 		out:         out,
 		lv:          lv,
 		time_format: time.DateTime,
+	}
+	if up_levels >= 0 {
+		_, pwd, _, _ := runtime.Caller(1)
+		for i := 0; i < up_levels+1; i++ {
+			pwd = filepath.Dir(pwd)
+		}
+		l.root = pwd + string(filepath.Separator)
 	}
 	return l
 }
 
 // SetRoot Used to reduce file path length in log printing
-// root_depth: The depth of the project root path from the current file
-func (l *Logger) SetRoot(root_depth int) {
+// up_levels: how many up levels to project base dir
+func (l *Logger) SetRoot(up_levels int) {
+	if up_levels < 0 {
+		l.root = ""
+		return
+	}
 	_, pwd, _, _ := runtime.Caller(1)
-	for i := 0; i < root_depth+1; i++ {
+	for i := 0; i < up_levels+1; i++ {
 		pwd = filepath.Dir(pwd)
 	}
 	l.root = pwd + string(filepath.Separator)
@@ -92,9 +95,11 @@ func (l *Logger) newHeader(skip int) *Header {
 		file = file[len(l.root):]
 	}
 	h := &Header{
-		file:     file,
-		line:     line,
-		datetime: time.Now().Format(time.DateTime),
+		file: file,
+		line: line,
+	}
+	if l.time_format != "" {
+		h.time = time.Now().Format(l.time_format)
 	}
 	return h
 }
@@ -124,16 +129,16 @@ func (l *Logger) Writeln(lv int, tag string, v ...interface{}) {
 	}
 	h := l.newHeader(3)
 	tag = ColorString(lv, tag)
-	fmt.Fprintf(l.out, "%s %s %s:%d %s", h.datetime, tag, h.file, h.line, fmt.Sprintln(v...))
+	fmt.Fprintf(l.out, "%s %s %s:%d %s", h.time, tag, h.file, h.line, fmt.Sprintln(v...))
 }
 
 func (l *Logger) Writef(lv int, tag string, format string, v ...interface{}) {
-	if l.out == nil || lv > l.lv {
+	if l.out == nil || lv > l.lv && l.lv > LvNone {
 		return
 	}
 	h := l.newHeader(3)
 	tag = ColorString(lv, tag)
-	fmt.Fprintf(l.out, "%s %s %s:%d %s\n", h.datetime, tag, h.file, h.line, fmt.Sprintf(format, v...))
+	fmt.Fprintf(l.out, "%s %s %s:%d %s\n", h.time, tag, h.file, h.line, fmt.Sprintf(format, v...))
 }
 
 func (l *Logger) Trace(v ...interface{}) {
@@ -157,6 +162,14 @@ func (l *Logger) Info(v ...interface{}) {
 }
 
 func (l *Logger) Infof(format string, v ...interface{}) {
+	l.Writef(LvInfo, "I", format, v...)
+}
+
+func (l *Logger) Println(v ...interface{}) {
+	l.Writeln(LvInfo, "I", v...)
+}
+
+func (l *Logger) Printf(format string, v ...interface{}) {
 	l.Writef(LvInfo, "I", format, v...)
 }
 
@@ -186,7 +199,7 @@ func (l *Logger) Fatalf(format string, v ...interface{}) {
 	os.Exit(1)
 }
 
-var Default = New(os.Stderr, 0, LvInfo)
+var Default = New(os.Stderr, -1, LvInfo)
 
 var SetRoot = Default.SetRoot
 var Root = Default.Root
@@ -200,6 +213,8 @@ var Debug = Default.Debug
 var Debugf = Default.Debugf
 var Info = Default.Info
 var Infof = Default.Infof
+var Println = Default.Println
+var Printf = Default.Printf
 var Warn = Default.Warn
 var Warnf = Default.Warnf
 var Error = Default.Error
